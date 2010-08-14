@@ -1,0 +1,487 @@
+#!/usr/bin/perl
+# -*- coding: ascii -*-
+
+#
+# Copyright (C) 2010 Toni Gundogdu <legatvs@gmail.com>.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+use warnings;
+use strict;
+
+binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8";
+
+use Getopt::ArgvFile( home => 1, startupFilename => [qw(.gcaprc)] );
+use Getopt::Long qw(:config bundling);
+
+my $VERSION = "0.0.1";
+my %config;
+my $video_title;
+
+exit main();
+
+sub init {
+    GetOptions(
+        \%config,
+        'interactive|i',
+        'title|t',
+        'regexp|r=s',
+        'version'   => \&print_version,
+        'license'   => \&print_license,
+        'help'      => \&print_help,
+    ) or exit 1;
+
+    $config{regexp} ||= "/(\\w|\\s)/g";
+    apply_regexp ($config{regexp}); # Check syntax.
+}
+
+sub print_version {
+    print "gcap version $VERSION\n";
+    exit 0;
+}
+
+sub print_license {
+    print
+        "Copyright (C) 2010 Toni Gundogdu. GNU GPL v3+. This is free software;
+see the source for copying conditions. There is NO warranty; not even
+for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+";
+    exit 0;
+}
+
+sub print_help {
+    require Pod::Usage;
+    Pod::Usage::pod2usage( -exitstatus => 0, -verbose => 1 );
+}
+
+my @captions;
+
+sub main {
+
+    init();
+
+    print_help() unless scalar @ARGV;
+
+    my $req_body = "http://video.google.com/timedtext?hl=en&type=list&v=";
+    my $url = $ARGV[0];
+
+    if ($url =~ /^http:/i ) {
+        if ($url =~ /v=([-_\w]+)/) {
+            $url = "$req_body$1";
+        }
+        else {
+            print STDERR "error: does not look like a youtube video page URL.\n";
+            exit 1;
+        }
+    }
+    else {
+        $url = "$req_body$url";
+    }
+
+    print STDERR "Checking ...";
+
+    require XML::DOM;
+
+    my $p = new XML::DOM::Parser;
+    my $d = $p->parsefile ($url);
+    my $r = $d->getDocumentElement;
+
+    for my $e ( $r->getElementsByTagName ("track") ) {
+        my %tmp = (
+            name        => $e->getAttributeNode ("name")->getValue || "",
+            lang_code   => $e->getAttributeNode ("lang_code")->getValue,
+            lang_transl => $e->getAttributeNode ("lang_translated")->getValue,
+            selected    => 1
+        );
+        push @captions, \%tmp;
+        print STDERR ".";
+    }
+
+    print STDERR "done.\n";
+
+    $d->dispose;
+
+    my $v = $1 if $url =~ /v=([-_\w]+)/;
+
+    get_title ($v) if $config{title};
+    prompt()   if $config{interactive};
+
+    my $t = 0;
+
+    foreach (@captions) {
+        ++$t if $_->{selected};
+    }
+
+    my $n = 0;
+
+    foreach (@captions) {
+
+        next unless $_->{selected};
+
+        $url = "http://video.google.com/timedtext?"
+                . "hl=$_->{lang_code}"
+                . "&lang=$_->{lang_code}"
+                . "&name=$_->{name}"
+                . "&v=$v";
+
+        my $fname = sprintf "%s_%s.srt", $v, $_->{lang_code};
+
+        if ($video_title) {
+            $video_title = apply_regexp ($config{regexp}, $video_title);
+            $fname = sprintf "%s_%s.srt", $video_title, $_->{lang_code};
+        }
+
+        open my $fh, ">", $fname or die "$fname: $!\n";
+        binmode $fh, ":utf8";
+
+        printf STDERR "(%02d of %02d) ", ++$n, $t if $t > 0;
+        print  STDERR "Saving $fname ...";
+
+        $d = $p->parsefile ($url);
+        $r = $d->getDocumentElement;
+
+        my $i = 1;
+        my $last_start = 0;
+
+        for my $e ($r->getElementsByTagName ("text") ) {
+
+            my $tmp = $e->getFirstChild;
+            next unless $tmp;
+
+            my $text = trim ($tmp->getNodeValue);
+            next unless $text;
+
+            my $start = $e->getAttributeNode ("start")->getValue;
+
+            my $start_sec  = 0;
+            my $start_msec = 0;
+
+            if ($start =~ /(\d+)/) {
+                $start_sec  = $1;
+                $start_msec = $1 if $start =~ /\d+\.(\d+)/; # should only capture 3 first digits
+            }
+
+            my @start = gmtime ($start_sec);
+
+            $tmp    = $e->getAttributeNode ("dur");
+            my $dur = $tmp ? $tmp->getValue : $start - $last_start;
+
+            my $end_sec  = $start + $dur;
+
+            $dur =~ /\d+\.(\d+)/; # should only capture 3 first digits
+            my $end_msec = $1 || 0;
+
+            my @end = gmtime ($end_sec);
+
+            printf $fh "%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n%s\r\n\r\n",
+                $i++, @start[2,1,0], $start_msec, @end[2,1,0], $end_msec, $text;
+
+            $last_start = $start;
+        }
+
+        $d->dispose;
+
+        close $fh;
+
+        print STDERR "done.\n";
+    }
+
+    return 0;
+}
+
+my $done = 0;
+
+sub prompt {
+
+    my %cmds = (
+        'h' => \&help,
+        'q' => \&quit,
+        'l' => \&list,
+        'a' => \&select_all,
+        'n' => \&select_none,
+        'i' => \&invert_selection,
+        'g' => \&get,
+    );
+
+    print STDERR "Enter prompt. " . qq/Type "help" to get a list of commands.\n/;
+    list();
+
+    my $p = "(gcap) ";
+
+    while (!$done) {
+        print STDERR $p;
+        my $ln = <STDIN>;
+        next unless $ln;
+        chomp $ln;
+        if ($ln =~ /(\d+)/) {
+            toggle_caption ($1);
+        }
+        else {
+            next unless $ln =~ /(\w)/;
+            $cmds{$1}() if defined $cmds{$1};
+        }
+    }
+}
+
+sub get_title {
+
+    my $v = shift;
+
+    my $url = "http://www.youtube.com/get_video_info?&video_id=$v"
+        . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
+
+    require LWP;
+
+    my $a = new LWP::UserAgent;
+    my $r = $a->get ($url);
+
+    unless ($r->is_success) {
+        print STDERR "error: " . $r->status_line
+            . "\nerror: while trying to fetch video title\n";
+        return;
+    }
+
+    require URI::Escape;
+
+    my $config = URI::Escape::uri_unescape ($r->content);
+
+    $config =~ s/\+/ /g;
+
+    if ($config =~ /&reason=(.*?)[?:&]?$/) {
+        my $e = $1;
+        print STDERR "error: $e\n";
+    }
+    else {
+        $video_title = $1 if $config =~ /&title=(.*?)&/;
+    }
+
+    unless ($video_title) {
+        print STDERR "warning: Could not match video title. "
+            . "Use video ID instead of title.\n";
+    }
+}
+
+sub apply_regexp {
+
+    my ($re,$s) = @_;
+    my ($pat, $flags);
+
+    if ($re =~ /^\/(.*)\/(.*)$/) {
+        $pat   = $1;
+        $flags = $2;
+    }
+    else {
+        print STDERR "error: invalid regexp syntax, expected `/pattern/flags'\n";
+        exit 1;
+    }
+
+    return unless $s;
+
+    my $q = $flags =~ /i/ ? qr/$pat/i : qr/$pat/;
+
+    return join '', $flags =~ /g/ ? $s =~ /$q/g : $s =~ /$q/;
+}
+
+sub help {
+    print STDERR "Commands:
+  help      .. this
+  list      .. display found captions (> indicates selected for download)
+  all       .. select all
+  none      .. select none
+  invert    .. invert selection
+  (number)  .. toggle caption
+  get       .. download selected captions
+  quit      .. quit without downloading captions\n"
+  . qq/Command name abbreviations are allowed, e.g. "h" instead of "help"\n/;
+}
+
+sub get  {
+    foreach (@captions) {
+        if ($_->{selected}) {
+            $done = 1;
+            return;
+        }
+    }
+    print STDERR "error: you have not selected anything\n";
+}
+
+sub quit { exit 0; }
+
+sub list {
+    my $i = 0;
+    foreach (@captions) {
+        printf STDERR "%2s%02d: $_->{lang_transl}\n", $_->{selected} ? ">":"", ++$i;
+    }
+}
+
+sub select_all {
+    $_->{selected} = 1 foreach @captions;
+    list();
+}
+
+sub select_none {
+    $_->{selected} = 0 foreach @captions;
+    list();
+}
+
+sub invert_selection {
+    $_->{selected} = !$_->{selected} foreach @captions;
+    list();
+}
+
+sub toggle_caption {
+    my $i = (shift) - 1;
+    if ($i >= 0 && exists $captions[$i]) {
+        $captions[$i]->{selected} = !$captions[$i]->{selected};
+        list();
+    }
+    else {
+        print STDERR "error: out of rate\n";
+    }
+}
+
+sub trim {
+    my $s = shift;
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    return $s;
+}
+
+__END__
+
+=head1 NAME
+
+gcap - Youtube closed caption retriever
+
+=head1 SYNOPSIS
+
+gcap [options] [URL|VIDEO_ID]
+
+=head1 DESCRIPTION
+
+gcap is a command line tool for retrieving Youtube closed captions.
+The retrieved closed captions are saved in SubRip (srt) file format.
+The srt files are saved as "$videoid_$langid.srt" by default.
+
+=head1 OPTIONS
+
+ --help             print help and exit
+ --version          print version and exit
+ --license          print license and exit
+ -i, --interactive  run in interactive mode, default is no
+ -t, --title        parse video title and use it in filename, default is no
+ -r, --regexp =arg  cleanup title with regexp, default is /(\w|\s)/g
+
+=head1 OPTION DESCRIPTIONS
+
+=over 4
+
+=item B<--help>
+
+Print help and exit.
+
+=item B<--version>
+
+Print version and exit.
+
+=item B<--license>
+
+Print license and exit.
+
+=item B<-i, --interactive>
+
+Enable interactive prompt which can be used to select the downloaded
+closed captions. By default gcap downloads all available captions
+without prompting.
+
+=item B<-t, --title>
+
+Parse video title and use it in the output filename(s) instead of
+video ID. The default is no.
+
+=item B<-r, --regexp>=arg
+
+Cleanup video title using the specified I<arg> regular expression.
+The default is "/(\w|\s)/g".
+
+=back
+
+=head1 EXAMPLES
+
+=over 4
+
+=item B<gcap 0QRO3gKj3qw>
+
+=item B<gcap "http://www.youtube.com/watch?v=0QRO3gKj3qw">
+
+Typical use. Both achieve the same.
+
+=back
+
+=head1 EXIT STATUS
+
+Exits 0 on success, otherwise 1.
+
+=head1 FILES
+
+=over 4
+
+=item $HOME/.gcaprc, for example:
+
+echo "--interactive" >> ~/.gcaprc
+
+=back
+
+=head1 NOTES
+
+=over 4
+
+=item B<Availability>
+
+Not all Youtube videos have closed captions. The following message
+indicates that the video does not have any closed captions available.
+URL omitted for brevity.
+
+  Couldn't parsefile [...] with LWP: no element found at line 1,
+  column 0, byte -1 at /usr/lib/perl5/vendor_perl/XML/Parser.pm ...
+
+=item B<http_proxy>
+
+gcap depends on XML::DOM which uses LWP::UserAgent to retrieve
+the data. Note that LWP::UserAgent reads http_proxy environment
+setting. e.g.:
+
+  env http_proxy=http://foo:1234 gcap video_id
+
+=item B<Project>
+
+<http://gcap.googlecode.com/>
+
+=item B<Development repository>
+
+<git://repo.or.cz/gcap.git>
+
+e.g. git clone git://repo.or.cz/gcap.git
+
+=back
+
+=head1 AUTHOR
+
+Toni Gundogdu <legatvs gmail com>
+
+=cut
+
+
