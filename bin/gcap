@@ -76,10 +76,11 @@ sub main {
     print_help() unless scalar @ARGV;
 
     my $req_body = "http://video.google.com/timedtext?hl=en&type=list&v=";
-    my $url = $ARGV[0];
+    my $url      = $ARGV[0];
+    my $q        = qr{v[=/]([-_\w]+)};
 
     if ($url =~ /^http:/i ) {
-        if ($url =~ /v=([-_\w]+)/) {
+        if ($url =~ /$q/) {
             $url = "$req_body$1";
         }
         else {
@@ -114,7 +115,7 @@ sub main {
 
     $d->dispose;
 
-    my $v = $1 if $url =~ /v=([-_\w]+)/;
+    my $v = $1 if $url =~ /$q/ or die "error: no match: video id";
 
     get_title ($v) if $config{title};
     prompt()   if $config{interactive};
