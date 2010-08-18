@@ -255,18 +255,15 @@ sub get_title {
         return;
     }
 
-    require URI::Escape;
+    require CGI;
 
-    my $config = URI::Escape::uri_unescape ($r->content);
+    my $q = CGI->new ($r->content);
 
-    $config =~ s/\+/ /g;
-
-    if ($config =~ /&reason=(.*?)[?:&]?$/) {
-        my $e = $1;
-        print STDERR "error: $e\n";
+    if ($q->param ('reason')) {
+        print STDERR "error: " . $q->param ."\n";
     }
     else {
-        $video_title = $1 if $config =~ /&title=(.*?)&/;
+        $video_title = $q->param ('title');
     }
 
     unless ($video_title) {
