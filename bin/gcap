@@ -247,6 +247,9 @@ sub get_title {
     require LWP;
 
     my $a = new LWP::UserAgent;
+
+    $a->env_proxy;
+
     my $r = $a->get ($url);
 
     unless ($r->is_success) {
