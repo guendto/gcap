@@ -77,7 +77,7 @@ sub main {
 
     my $req_body = "http://video.google.com/timedtext?hl=en&type=list&v=";
     my $url      = $ARGV[0];
-    my $q        = qr{v[=/]([-_\w]+)};
+    my $q        = qr{v[=/]([-_\w]{11,11}+)};
 
     if ($url =~ /^http:/i ) {
         if ($url =~ /$q/) {
@@ -253,8 +253,7 @@ sub get_title {
     my $r = $a->get ($url);
 
     unless ($r->is_success) {
-        print STDERR "error: " . $r->status_line
-            . "\nerror: while trying to fetch video title\n";
+        printf STDERR "\nerror: $url: %s\n", $r->status_line;
         return;
     }
 
@@ -263,15 +262,15 @@ sub get_title {
     my $q = CGI->new ($r->content);
 
     if ($q->param ('reason')) {
-        print STDERR "error: " . $q->param ."\n";
+        printf STDERR "\nerror: %s: %s (errorcode: %d)\n",
+            $url, $q->param ("reason"), $q->param ("errorcode");
     }
     else {
         $video_title = $q->param ('title');
     }
 
     unless ($video_title) {
-        print STDERR "warning: Could not match video title. "
-            . "Use video ID instead of title.\n";
+        print STDERR "\nwarning: $url: use id instead\n";
     }
 }
 
