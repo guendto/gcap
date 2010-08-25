@@ -266,7 +266,8 @@ sub get_title {
             $url, $q->param ("reason"), $q->param ("errorcode");
     }
     else {
-        $video_title = $q->param ('title');
+        require Encode;
+        $video_title = Encode::decode_utf8 ($q->param ('title'));
     }
 
     unless ($video_title) {
