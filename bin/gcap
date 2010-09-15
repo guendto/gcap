@@ -369,7 +369,7 @@ gcap - Youtube closed caption retriever
 
 =head1 SYNOPSIS
 
-gcap [options] [URL|VIDEO_ID]
+gcap [-i] [-t] [-r E<lt>regexpE<gt>] [E<lt>urlE<gt> | E<lt>video_idE<gt>]
 
 =head1 DESCRIPTION
 
