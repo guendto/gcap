@@ -40,6 +40,8 @@ sub init {
         'interactive|i',
         'title|t',
         'regexp|r=s',
+        'proxy=s',
+        'no_proxy|no-proxy',
         'version'   => \&print_version,
         'license'   => \&print_license,
         'help'      => \&print_help,
@@ -95,9 +97,18 @@ sub main {
 
     print STDERR "Checking ...";
 
+    require LWP;
+
+    my $a = new LWP::UserAgent;
+
+    $a->env_proxy; # http://search.cpan.org/perldoc?LWP::UserAgent
+
+    $a->proxy    ('http', $config{proxy}) if $config{proxy};
+    $a->no_proxy ('') if $config{no_proxy};
+
     require XML::DOM;
 
-    my $p = new XML::DOM::Parser;
+    my $p = new XML::DOM::Parser (LWP_UserAgent => $a);
     my $d = $p->parsefile ($url);
     my $r = $d->getDocumentElement;
 
@@ -118,7 +129,7 @@ sub main {
 
     my $v = $1 if $url =~ /$q/ or die "error: no match: video id";
 
-    get_title ($v) if $config{title};
+    get_title ($v, $a) if $config{title};
     prompt()   if $config{interactive};
 
     my $t = 0;
@@ -239,17 +250,10 @@ sub prompt {
 }
 
 sub get_title {
-
-    my $v = shift;
+    my ($v, $a) = @_;
 
     my $url = "http://www.youtube.com/get_video_info?&video_id=$v"
         . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
-
-    require LWP;
-
-    my $a = new LWP::UserAgent;
-
-    $a->env_proxy;
 
     my $r = $a->get ($url);
 
@@ -371,6 +375,7 @@ gcap - Youtube closed caption retriever
 =head1 SYNOPSIS
 
 gcap [-i] [-t] [-r E<lt>regexpE<gt>] [E<lt>urlE<gt> | E<lt>video_idE<gt>]
+    [--proxy E<lt>addrE<gt> | --no-proxy]
 
 =head1 DESCRIPTION
 
@@ -386,6 +391,8 @@ The srt files are saved as "$videoid_$langid.srt" by default.
  -i, --interactive                run in interactive mode
  -t, --title                      parse video title and use it in filename
  -r, --regexp arg (="/(\w|\s)/g") cleanup title with regexp
+     --proxy arg (=http_env)      use proxy for http connections
+     --no-proxy                   disable use of http proxy
 
 =head1 OPTION DESCRIPTIONS
 
@@ -418,6 +425,16 @@ video ID. The default is no.
 
 Cleanup video title using the specified I<arg> regular expression.
 The default is "/(\w|\s)/g".
+
+=item B<--proxy> I<arg>
+
+Use I<arg> for HTTP proxy, e.g. "http://foo:1234". Overrides the http_proxy
+environment setting.
+
+=item B<--no-proxy>
+
+Disable use of HTTP proxy. Overrides both C<--proxy> and http_proxy environment
+settings.
 
 =back
 
