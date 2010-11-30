@@ -81,7 +81,7 @@ sub main {
 
     my $req_body = "http://video.google.com/timedtext?hl=en&type=list&v=";
     my $url      = $ARGV[0];
-    my $q        = qr{v[=/]([-_\w]{11,11}+)};
+    my $q        = qr{v[=/]((?>[-_\w]{11}))};
 
     if ($url =~ /^http:/i ) {
         if ($url =~ /$q/) {
