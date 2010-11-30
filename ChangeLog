@@ -1,6 +1,7 @@
 
 0.0.5
 Changes:
+        - Add --quiet
         - Add --proxy, --no-proxy
 
 

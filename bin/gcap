@@ -42,6 +42,7 @@ sub init {
         'regexp|r=s',
         'proxy=s',
         'no_proxy|no-proxy',
+        'quiet|q',
         'version'   => \&print_version,
         'license'   => \&print_license,
         'help'      => \&print_help,
@@ -95,7 +96,7 @@ sub main {
         $url = "$req_body$url";
     }
 
-    print STDERR "Checking ...";
+    print STDERR "Checking ..."  unless $config{quiet};
 
     require LWP;
 
@@ -120,10 +121,10 @@ sub main {
             selected    => 1
         );
         push @captions, \%tmp;
-        print STDERR ".";
+        print STDERR "."  unless $config{quiet};
     }
 
-    print STDERR "done.\n";
+    print STDERR "done.\n"  unless $config{quiet};
 
     $d->dispose;
 
@@ -160,8 +161,10 @@ sub main {
         open my $fh, ">", $fname or die "$fname: $!\n";
         binmode $fh, ":utf8";
 
-        printf STDERR "(%02d of %02d) ", ++$n, $t if $t > 0;
-        print  STDERR "Saving $fname ...";
+        unless ($config{quiet}) {
+            printf STDERR "(%02d of %02d) ", ++$n, $t if $t > 0;
+            print  STDERR "Saving $fname ...";
+        }
 
         $d = $p->parsefile ($url);
         $r = $d->getDocumentElement;
@@ -209,7 +212,7 @@ sub main {
 
         close $fh;
 
-        print STDERR "done.\n";
+        print STDERR "done.\n"  unless $config{quiet};
     }
 
     return 0;
@@ -276,7 +279,8 @@ sub get_title {
     }
 
     unless ($video_title) {
-        print STDERR "\nwarning: $url: use id instead\n";
+        print STDERR "\nwarning: $url: use id instead\n"
+            unless $config{quiet};
     }
 }
 
@@ -388,6 +392,7 @@ The srt files are saved as "$videoid_$langid.srt" by default.
      --help                       print help and exit
      --version                    print version and exit
      --license                    print license and exit
+ -q, --quiet                      be quiet
  -i, --interactive                run in interactive mode
  -t, --title                      parse video title and use it in filename
  -r, --regexp arg (="/(\w|\s)/g") cleanup title with regexp
@@ -409,6 +414,10 @@ Print version and exit.
 =item B<--license>
 
 Print license and exit.
+
+=item B<-q, --quiet>
+
+Be quiet.
 
 =item B<-i, --interactive>
 
