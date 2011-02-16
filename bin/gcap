@@ -24,7 +24,7 @@ use strict;
 binmode STDOUT, ":utf8";
 binmode STDERR, ":utf8";
 
-use version 0.77 (); our $VERSION = version->declare ("0.0.5");
+use version 0.77 (); our $VERSION = version->declare("0.0.5");
 
 use Getopt::ArgvFile( home => 1, startupFilename => [qw(.gcaprc)] );
 use Getopt::Long qw(:config bundling);
@@ -43,13 +43,13 @@ sub init {
         'proxy=s',
         'no_proxy|no-proxy',
         'quiet|q',
-        'version'   => \&print_version,
-        'license'   => \&print_license,
-        'help'      => \&print_help,
+        'version' => \&print_version,
+        'license' => \&print_license,
+        'help'    => \&print_help,
     ) or exit 1;
 
     $config{regexp} ||= "/(\\w|\\s)/g";
-    apply_regexp ($config{regexp}); # Check syntax.
+    apply_regexp( $config{regexp} );    # Check syntax.
 }
 
 sub print_version {
@@ -59,7 +59,7 @@ sub print_version {
 
 sub print_license {
     print
-        "Copyright (C) 2010 Toni Gundogdu. GNU GPL v3+. This is free software;
+"Copyright (C) 2010 Toni Gundogdu. GNU GPL v3+. This is free software;
 see the source for copying conditions. There is NO warranty; not even
 for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ";
@@ -79,16 +79,18 @@ sub main {
 
     print_help() unless scalar @ARGV;
 
-    my $req_body = "http://video.google.com/timedtext?hl=en&type=list&v=";
-    my $url      = $ARGV[0];
-    my $q        = qr{v[=/]((?>[-_\w]{11}))};
+    my $req_body =
+      "http://video.google.com/timedtext?hl=en&type=list&v=";
+    my $url = $ARGV[0];
+    my $q   = qr{v[=/]((?>[-_\w]{11}))};
 
-    if ($url =~ /^http:/i ) {
-        if ($url =~ /$q/) {
+    if ( $url =~ /^http:/i ) {
+        if ( $url =~ /$q/ ) {
             $url = "$req_body$1";
         }
         else {
-            print STDERR "error: does not look like a youtube video page URL.\n";
+            print STDERR
+              "error: does not look like a youtube video page URL.\n";
             exit 1;
         }
     }
@@ -96,42 +98,43 @@ sub main {
         $url = "$req_body$url";
     }
 
-    print STDERR "Checking ..."  unless $config{quiet};
+    print STDERR "Checking ..." unless $config{quiet};
 
     require LWP;
 
     my $a = new LWP::UserAgent;
 
-    $a->env_proxy; # http://search.cpan.org/perldoc?LWP::UserAgent
+    $a->env_proxy;    # http://search.cpan.org/perldoc?LWP::UserAgent
 
-    $a->proxy    ('http', $config{proxy}) if $config{proxy};
-    $a->no_proxy ('') if $config{no_proxy};
+    $a->proxy( 'http', $config{proxy} ) if $config{proxy};
+    $a->no_proxy('') if $config{no_proxy};
 
     require XML::DOM;
 
-    my $p = new XML::DOM::Parser (LWP_UserAgent => $a);
-    my $d = $p->parsefile ($url);
+    my $p = new XML::DOM::Parser( LWP_UserAgent => $a );
+    my $d = $p->parsefile($url);
     my $r = $d->getDocumentElement;
 
-    for my $e ( $r->getElementsByTagName ("track") ) {
+    for my $e ( $r->getElementsByTagName("track") ) {
         my %tmp = (
-            name        => $e->getAttributeNode ("name")->getValue || "",
-            lang_code   => $e->getAttributeNode ("lang_code")->getValue,
-            lang_transl => $e->getAttributeNode ("lang_translated")->getValue,
-            selected    => 1
+            name => $e->getAttributeNode("name")->getValue || "",
+            lang_code => $e->getAttributeNode("lang_code")->getValue,
+            lang_transl =>
+              $e->getAttributeNode("lang_translated")->getValue,
+            selected => 1
         );
         push @captions, \%tmp;
-        print STDERR "."  unless $config{quiet};
+        print STDERR "." unless $config{quiet};
     }
 
-    print STDERR "done.\n"  unless $config{quiet};
+    print STDERR "done.\n" unless $config{quiet};
 
     $d->dispose;
 
     my $v = $1 if $url =~ /$q/ or die "error: no match: video id";
 
-    get_title ($v, $a) if $config{title};
-    prompt()   if $config{interactive};
+    get_title( $v, $a ) if $config{title};
+    prompt() if $config{interactive};
 
     my $t = 0;
 
@@ -145,65 +148,70 @@ sub main {
 
         next unless $_->{selected};
 
-        $url = "http://video.google.com/timedtext?"
-                . "hl=$_->{lang_code}"
-                . "&lang=$_->{lang_code}"
-                . "&name=$_->{name}"
-                . "&v=$v";
+        $url =
+            "http://video.google.com/timedtext?"
+          . "hl=$_->{lang_code}"
+          . "&lang=$_->{lang_code}"
+          . "&name=$_->{name}" . "&v=$v";
 
         my $fname = sprintf "%s_%s.srt", $v, $_->{lang_code};
 
         if ($video_title) {
-            $video_title = apply_regexp ($config{regexp}, $video_title);
+            $video_title =
+              apply_regexp( $config{regexp}, $video_title );
             $fname = sprintf "%s_%s.srt", $video_title, $_->{lang_code};
         }
 
         open my $fh, ">", $fname or die "$fname: $!\n";
         binmode $fh, ":utf8";
 
-        unless ($config{quiet}) {
+        unless ( $config{quiet} ) {
             printf STDERR "(%02d of %02d) ", ++$n, $t if $t > 0;
-            print  STDERR "Saving $fname ...";
+            print STDERR "Saving $fname ...";
         }
 
-        $d = $p->parsefile ($url);
+        $d = $p->parsefile($url);
         $r = $d->getDocumentElement;
 
-        my $i = 1;
+        my $i          = 1;
         my $last_start = 0;
 
-        for my $e ($r->getElementsByTagName ("text") ) {
+        for my $e ( $r->getElementsByTagName("text") ) {
 
             my $tmp = $e->getFirstChild;
             next unless $tmp;
 
-            my $text = trim ($tmp->getNodeValue);
+            my $text = trim( $tmp->getNodeValue );
             next unless $text;
 
-            my $start = $e->getAttributeNode ("start")->getValue;
+            my $start = $e->getAttributeNode("start")->getValue;
 
             my $start_sec  = 0;
             my $start_msec = 0;
 
-            if ($start =~ /(\d+)/) {
+            if ( $start =~ /(\d+)/ ) {
                 $start_sec  = $1;
-                $start_msec = $1 if $start =~ /\d+\.(\d+)/; # should only capture 3 first digits
+                $start_msec = $1
+                  if $start =~
+                      /\d+\.(\d+)/; # should only capture 3 first digits
             }
 
-            my @start = gmtime ($start_sec);
+            my @start = gmtime($start_sec);
 
-            $tmp    = $e->getAttributeNode ("dur");
+            $tmp = $e->getAttributeNode("dur");
             my $dur = $tmp ? $tmp->getValue : $start - $last_start;
 
-            my $end_sec  = $start + $dur;
+            my $end_sec = $start + $dur;
 
-            $dur =~ /\d+\.(\d+)/; # should only capture 3 first digits
+            $dur =~ /\d+\.(\d+)/;   # should only capture 3 first digits
             my $end_msec = $1 || 0;
 
-            my @end = gmtime ($end_sec);
+            my @end = gmtime($end_sec);
 
-            printf $fh "%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n%s\r\n\r\n",
-                $i++, @start[2,1,0], $start_msec, @end[2,1,0], $end_msec, $text;
+            printf $fh
+"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n%s\r\n\r\n",
+              $i++, @start[ 2, 1, 0 ], $start_msec, @end[ 2, 1, 0 ],
+              $end_msec, $text;
 
             $last_start = $start;
         }
@@ -212,7 +220,7 @@ sub main {
 
         close $fh;
 
-        print STDERR "done.\n"  unless $config{quiet};
+        print STDERR "done.\n" unless $config{quiet};
     }
 
     return 0;
@@ -232,18 +240,19 @@ sub prompt {
         'g' => \&get,
     );
 
-    print STDERR "Enter prompt. " . qq/Type "help" to get a list of commands.\n/;
+    print STDERR "Enter prompt. "
+      . qq/Type "help" to get a list of commands.\n/;
     list();
 
     my $p = "(gcap) ";
 
-    while (!$done) {
+    while ( !$done ) {
         print STDERR $p;
         my $ln = <STDIN>;
         next unless $ln;
         chomp $ln;
-        if ($ln =~ /(\d+)/) {
-            toggle_caption ($1);
+        if ( $ln =~ /(\d+)/ ) {
+            toggle_caption($1);
         }
         else {
             next unless $ln =~ /(\w)/;
@@ -253,48 +262,49 @@ sub prompt {
 }
 
 sub get_title {
-    my ($v, $a) = @_;
+    my ( $v, $a ) = @_;
 
     my $url = "http://www.youtube.com/get_video_info?&video_id=$v"
-        . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
+      . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
 
-    my $r = $a->get ($url);
+    my $r = $a->get($url);
 
-    unless ($r->is_success) {
+    unless ( $r->is_success ) {
         printf STDERR "\nerror: $url: %s\n", $r->status_line;
         return;
     }
 
     require CGI;
 
-    my $q = CGI->new ($r->content);
+    my $q = CGI->new( $r->content );
 
-    if ($q->param ('reason')) {
+    if ( $q->param('reason') ) {
         printf STDERR "\nerror: %s: %s (errorcode: %d)\n",
-            $url, $q->param ("reason"), $q->param ("errorcode");
+          $url, $q->param("reason"), $q->param("errorcode");
     }
     else {
         require Encode;
-        $video_title = Encode::decode_utf8 ($q->param ('title'));
+        $video_title = Encode::decode_utf8( $q->param('title') );
     }
 
     unless ($video_title) {
         print STDERR "\nwarning: $url: use id instead\n"
-            unless $config{quiet};
+          unless $config{quiet};
     }
 }
 
 sub apply_regexp {
 
-    my ($re,$s) = @_;
-    my ($pat, $flags);
+    my ( $re, $s ) = @_;
+    my ( $pat, $flags );
 
-    if ($re =~ /^\/(.*)\/(.*)$/) {
+    if ( $re =~ /^\/(.*)\/(.*)$/ ) {
         $pat   = $1;
         $flags = $2;
     }
     else {
-        print STDERR "error: invalid regexp syntax, expected `/pattern/flags'\n";
+        print STDERR
+          "error: invalid regexp syntax, expected `/pattern/flags'\n";
         exit 1;
     }
 
@@ -315,12 +325,12 @@ sub help {
   (number)  .. toggle caption
   get       .. download selected captions
   quit      .. quit without downloading captions\n"
-  . qq/Command name abbreviations are allowed, e.g. "h" instead of "help"\n/;
+      . qq/Command name abbreviations are allowed, e.g. "h" instead of "help"\n/;
 }
 
-sub get  {
+sub get {
     foreach (@captions) {
-        if ($_->{selected}) {
+        if ( $_->{selected} ) {
             $done = 1;
             return;
         }
@@ -333,7 +343,8 @@ sub quit { exit 0; }
 sub list {
     my $i = 0;
     foreach (@captions) {
-        printf STDERR "%2s%02d: $_->{lang_transl}\n", $_->{selected} ? ">":"", ++$i;
+        printf STDERR "%2s%02d: $_->{lang_transl}\n",
+          $_->{selected} ? ">" : "", ++$i;
     }
 }
 
@@ -354,7 +365,7 @@ sub invert_selection {
 
 sub toggle_caption {
     my $i = (shift) - 1;
-    if ($i >= 0 && exists $captions[$i]) {
+    if ( $i >= 0 && exists $captions[$i] ) {
         $captions[$i]->{selected} = !$captions[$i]->{selected};
         list();
     }
