@@ -4,5 +4,8 @@
 ^\.
 .gz
 TODO
-.srt
-*~
+~$
+^patches/
+.patch
+.bak$
+.srt$
