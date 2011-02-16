@@ -1,15 +1,14 @@
-#!/usr/bin/env perl
-
 use warnings;
 use strict;
 
+use 5.008009;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
     'NAME' => 'gcap',
     ( $[ >= 5.8 )
     ? ( AUTHOR => 'Toni Gundogdu <legatvs at sign gmail com>',
-        'ABSTRACT' => 'Youtube closed caption retriever'
+        'ABSTRACT' => 'Youtube closed caption downloader'
         )
     : (),
     'VERSION_FROM' => 'bin/gcap',
@@ -21,5 +20,15 @@ WriteMakefile(
 'version'           => 0.77, # <http://search.cpan.org/perldoc?version>
 'HTML::Entities'    => 3.68, # <http://search.cpan.org/perldoc?HTML::Entities>
     },
-    'LICENSE' => 'gpl'
+    'LICENSE' => 'gpl',
+    dist => {
+        PREOP =>
+'@if test -f .git/HEAD; then \
+	git log --stat --after="Thu Feb 17 00:51:39 2011" >ChangeLog; \
+fi',
+        POSTOP   =>
+'@if test -f .git/HEAD; then \
+	git checkout ChangeLog; \
+fi',
+    },
 );
