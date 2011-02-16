@@ -19,6 +19,7 @@ WriteMakefile(
 'Getopt::ArgvFile'  => 1.11, # <http://search.cpan.org/perldoc?Getopt::ArgvFile>
 'XML::DOM'          => 1.44, # <http://search.cpan.org/perldoc?XML::DOM>
 'version'           => 0.77, # <http://search.cpan.org/perldoc?version>
+'HTML::Entities'    => 3.68, # <http://search.cpan.org/perldoc?HTML::Entities>
     },
     'LICENSE' => 'gpl'
 );
