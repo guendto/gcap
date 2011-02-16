@@ -142,6 +142,8 @@ sub main {
         ++$t if $_->{selected};
     }
 
+    require HTML::Entities;
+
     my $n = 0;
 
     foreach (@captions) {
@@ -183,6 +185,7 @@ sub main {
 
             my $text = trim( $tmp->getNodeValue );
             next unless $text;
+            $text = HTML::Entities::decode_entities($text);
 
             my $start = $e->getAttributeNode("start")->getValue;
 
