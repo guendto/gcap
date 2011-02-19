@@ -493,12 +493,12 @@ echo "--interactive" >> ~/.gcaprc
 
 =item B<Availability>
 
-Not all Youtube videos have closed captions. The following message
-indicates that the video does not have any closed captions available.
-URL omitted for brevity.
+The following error message produced by gcap (or the XML::DOM module)
+typically indicates that the video does not have any closed captions
+available for it (URL omitted for brewity):
 
   Couldn't parsefile [...] with LWP: no element found at line 1,
-  column 0, byte -1 at /usr/lib/perl5/vendor_perl/XML/Parser.pm ...
+  column 0, byte -1 at [...]/XML/Parser.pm [...]
 
 =item B<http_proxy>
 
