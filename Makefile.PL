@@ -21,6 +21,8 @@ WriteMakefile(
 'HTML::Entities'    => 3.68, # <http://search.cpan.org/perldoc?HTML::Entities>
     },
     'LICENSE' => 'gpl',
+    'MAN1PODS' =>
+        { 'man1/gcap.1.pod' => '$(INST_MAN1DIR)/gcap.$(MAN1EXT)' },
     dist => {
         PREOP =>
 '@if test -f .git/HEAD; then \

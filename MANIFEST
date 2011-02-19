@@ -3,6 +3,7 @@ COPYING
 ChangeLog
 ChangeLog.pre-gitlog
 NEWS
+man1/gcap.1.pod
 Makefile.PL
 MANIFEST			This list of files
 README

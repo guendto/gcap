@@ -1,0 +1,125 @@
+=head1 NAME
+
+gcap - Youtube closed caption downloader
+
+=head1 SYNOPSIS
+
+gcap [-i] [-t] [-r E<lt>regexpE<gt>] [E<lt>urlE<gt> | E<lt>video_idE<gt>]
+    [--proxy E<lt>addrE<gt> | --no-proxy]
+
+=head1 DESCRIPTION
+
+gcap is a command line tool for downloading Youtube closed captions.
+The downloaded closed captions are saved in SubRip (srt) file format.
+The srt files are saved as "$videoid_$langid.srt" by default.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--help>
+
+Print help and exit.
+
+=item B<--version>
+
+Print version and exit.
+
+=item B<--license>
+
+Print license and exit.
+
+=item B<-q, --quiet>
+
+Be quiet.
+
+=item B<-i, --interactive>
+
+Enable interactive prompt which can be used to select the downloaded
+closed captions. By default gcap downloads all available captions
+without prompting.
+
+=item B<-t, --title>
+
+Parse video title and use it in the output filename(s) instead of
+video ID. The default is no.
+
+=item B<-r, --regexp>=arg
+
+Cleanup video title using the specified I<arg> regular expression.
+The default is "/(\w|\s)/g".
+
+=item B<--proxy> I<arg>
+
+Use I<arg> for HTTP proxy, e.g. "http://foo:1234". Overrides the http_proxy
+environment setting.
+
+=item B<--no-proxy>
+
+Disable use of HTTP proxy. Overrides both C<--proxy> and http_proxy environment
+settings.
+
+=back
+
+=head1 EXAMPLES
+
+=over 4
+
+=item B<gcap 0QRO3gKj3qw>
+
+=item B<gcap "http://www.youtube.com/watch?v=0QRO3gKj3qw">
+
+Both yield the same results.
+
+=back
+
+=head1 EXIT STATUS
+
+Exits 0 on success, otherwise 1.
+
+=head1 FILES
+
+=over 4
+
+=item $HOME/.gcaprc, for example:
+
+echo "--interactive" >> ~/.gcaprc
+
+=back
+
+=head1 NOTES
+
+=over 4
+
+=item B<Availability>
+
+The following error message produced by gcap (or the XML::DOM module)
+typically indicates that the video does not have any closed captions
+available for it (URL omitted for brewity):
+
+  Couldn't parsefile [...] with LWP: no element found at line 1,
+  column 0, byte -1 at [...]/XML/Parser.pm [...]
+
+=item B<http_proxy>
+
+gcap depends on XML::DOM which uses LWP::UserAgent to download
+the data. Note that LWP::UserAgent reads http_proxy environment
+setting. e.g.:
+
+  env http_proxy=http://foo:1234 gcap video_id
+
+=item B<Project>
+
+E<lt>http://gcap.googlecode.com/E<gt>
+
+=item B<Development repository>
+
+E<lt>git://repo.or.cz/gcap.gitE<gt>
+
+e.g. git clone git://repo.or.cz/gcap.git
+
+=back
+
+=head1 AUTHOR
+
+Toni Gundogdu E<lt>legatvs gmail comE<gt>
