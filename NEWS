@@ -1,0 +1,10 @@
+
+0.0.6  Sun Feb 20 2011  Toni Gundogdu
+Changes:
+        - Add HTML::Entities prerequisite
+        - Add man1/gcap.1.pod
+Bugfixes:
+        - Decode HTML entities (#2)
+
+
+See ChangeLog.pre-gitlog file for the earlier notes.
