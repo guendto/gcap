@@ -62,7 +62,7 @@ sub treat_argv {
 
     my @argv;
     foreach my $arg (@ARGV) {
-        if ( my $count = ( $arg =~ s/(.)/$1/gs ) eq 11 ) {
+        if ( length($arg) == 11 ) {
             push @argv, "http://youtube.com/v/$arg";
         }
         else {
