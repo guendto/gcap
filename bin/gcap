@@ -428,15 +428,15 @@ gcap [-i] [-t] [-r E<lt>regexpE<gt>] [--proxy E<lt>addrE<gt> | --no-proxy]
 
 =head1 OPTIONS
 
-     --help                       print help and exit
-     --version                    print version and exit
-     --license                    print license and exit
- -q, --quiet                      be quiet
- -i, --interactive                run in interactive mode
- -t, --title                      parse video title and use it in filename
- -r, --regexp arg (="/(\w|\s)/g") cleanup title with regexp
-     --proxy arg (=http_env)      use proxy for http connections
-     --no-proxy                   disable use of http proxy
+     --help                       Print help and exit
+     --version                    Print version and exit
+     --license                    Print license and exit
+ -q, --quiet                      Be quiet
+ -i, --interactive                Run in interactive mode
+ -t, --title                      Parse video title and use it in filename
+ -r, --regexp arg (="/(\w|\s)/g") Cleanup title with regexp
+     --proxy arg (=http_env)      Use proxy for http connections
+     --no-proxy                   Disable use of HTTP proxy
 
 =cut
 
