@@ -91,26 +91,6 @@ echo "--interactive" >> ~/.gcaprc
 
 =over 4
 
-=item B<Video IDs starting with a dash>
-
-Some Youtube video IDs may start with a dash ('-'). This causes problems
-with the Getopt::* modules that gcap uses to parse the command line
-args, e.g.:
-  % gcap -W3Cn6R0jWk
-  Unknown option: W
-  Unknown option: 3
-  Unknown option: C
-  Unknown option: n
-  Unknown option: 6
-  Unknown option: R
-  Unknown option: 0
-  Unknown option: j
-  Unknown option: W
-  Unknown option: k
-
-You can work around this by using the URL form instead:
-  % gcap http://youtube.com/v/-W3Cn6R0jWk
-
 =item B<Availability>
 
 The following error message produced by gcap (or the XML::DOM module)

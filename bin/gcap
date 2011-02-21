@@ -35,6 +35,8 @@ my $video_title;
 exit main();
 
 sub init {
+    treat_argv();
+
     GetOptions(
         \%config,
         'interactive|i',
@@ -50,6 +52,24 @@ sub init {
 
     $config{regexp} ||= "/(\\w|\\s)/g";
     apply_regexp( $config{regexp} );    # Check syntax.
+}
+
+sub treat_argv {
+
+    # Convert args (of length of 11) to Youtube URLs. Do this
+    # before calling Getopt::* as some IDs may start with '-'
+    # which confuses the Getopt::*.
+
+    my @argv;
+    foreach my $arg (@ARGV) {
+        if ( my $count = ( $arg =~ s/(.)/$1/gs ) eq 11 ) {
+            push @argv, "http://youtube.com/v/$arg";
+        }
+        else {
+            push @argv, $arg;
+        }
+    }
+    @ARGV = @argv;
 }
 
 sub print_version {
