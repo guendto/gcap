@@ -287,6 +287,8 @@ sub prompt {
 sub get_title {
     my ( $v, $a ) = @_;
 
+    print STDERR ":: Getting video title ..." unless $config{quiet};
+
     my $url = "http://www.youtube.com/get_video_info?&video_id=$v"
       . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
 
@@ -295,6 +297,9 @@ sub get_title {
     unless ( $r->is_success ) {
         printf STDERR "\nerror: $url: %s\n", $r->status_line;
         return;
+    }
+    else {
+        print STDERR "done.\n" unless $config{quiet};
     }
 
     require CGI;
