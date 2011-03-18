@@ -263,6 +263,8 @@ my $done = 0;
 
 sub prompt {
 
+    return if scalar @captions == 0;
+
     my %cmds = (
         'h' => \&help,
         'q' => \&quit,
@@ -299,17 +301,15 @@ sub get_title {
 
     print STDERR ":: Getting video title ..." unless $config{quiet};
 
-    my $url = "http://www.youtube.com/get_video_info?&video_id=$v"
+    my $page_url = "http://youtube.com/watch?v=$v";
+    my $url      = "http://www.youtube.com/get_video_info?&video_id=$v"
       . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
 
     my $r = $a->get($url);
 
     unless ( $r->is_success ) {
-        printf STDERR "\nerror: $url: %s\n", $r->status_line;
+        printf STDERR "\nerror: $page_url: %s\n", $r->status_line;
         return;
-    }
-    else {
-        print STDERR "done.\n" unless $config{quiet};
     }
 
     require CGI;
@@ -318,17 +318,17 @@ sub get_title {
 
     if ( $q->param('reason') ) {
         printf STDERR "\nerror: %s: %s (errorcode: %d)\n",
-          $url, $q->param("reason"), $q->param("errorcode");
+          $page_url, trim( $q->param("reason") ),
+          $q->param("errorcode");
     }
     else {
+        print STDERR "done.\n" unless $config{quiet};
         require Encode;
-        $video_title = Encode::decode_utf8( $q->param('title') );
+        $video_title =
+          trim( Encode::decode_utf8( $q->param('title') ) );
     }
 
-    unless ($video_title) {
-        print STDERR "\nwarning: $url: use id instead\n"
-          unless $config{quiet};
-    }
+    $video_title;
 }
 
 sub apply_regexp {
@@ -414,9 +414,10 @@ sub toggle_caption {
 
 sub trim {
     my $s = shift;
-    $s =~ s/^\s+//;
-    $s =~ s/\s+$//;
-    return $s;
+    $s =~ s{^[\s]+}//;
+    $s =~ s{\s+$}//;
+    $s =~ s{\s\s+}/ /g;
+    $s;
 }
 
 __END__
