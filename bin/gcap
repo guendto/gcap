@@ -436,7 +436,7 @@ gcap [-i] [-t] [-r E<lt>regexpE<gt>] [--proxy E<lt>addrE<gt> | --no-proxy]
  -i, --interactive                Run in interactive mode
  -t, --title                      Parse video title and use it in filename
  -r, --regexp arg (="/(\w|\s)/g") Cleanup title with regexp
-     --proxy arg (=http_env)      Use proxy for http connections
+     --proxy arg (=http_proxy)    Use proxy for http connections
      --no-proxy                   Disable use of HTTP proxy
 
 =cut
