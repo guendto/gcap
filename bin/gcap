@@ -112,7 +112,8 @@ sub main {
     my $req_body =
       "http://video.google.com/timedtext?hl=en&type=list&v=";
     my $url = $ARGV[0];
-    my $q   = qr{v[=/]((?>[-_\w]{11}))};
+
+    my $q = qr{(?:embed|v)[=/]((?>[-_\w]{11}))};
 
     if ( $url =~ /^http:/i ) {
         if ( $url =~ /$q/ ) {
@@ -120,8 +121,8 @@ sub main {
         }
         else {
             print STDERR
-              "error: does not look like a youtube video page URL.\n";
-            exit 1;
+"error: '$url' does not look like a youtube video page url\n";
+            return 1;
         }
     }
     else {
@@ -161,7 +162,7 @@ sub main {
 
     $d->dispose;
 
-    my $v = $1 if $url =~ /$q/ or die "error: no match: video id";
+    my $v = $1 if $url =~ /$q/ or die "error: $url: no match: video id";
 
     get_title( $v, $a ) if $config{title};
     prompt() if $config{interactive};
@@ -170,6 +171,11 @@ sub main {
 
     foreach (@captions) {
         ++$t if $_->{selected};
+    }
+
+    if ( $t == 0 ) {
+        print STDERR "error: no input: no captions found\n";
+        return 1;
     }
 
     require HTML::Entities;
@@ -342,7 +348,7 @@ sub apply_regexp {
     }
     else {
         print STDERR
-          "error: invalid regexp syntax, expected `/pattern/flags'\n";
+"error: --regexp: '$re' does not look like `/pattern/flags'\n";
         exit 1;
     }
 
@@ -408,7 +414,7 @@ sub toggle_caption {
         list();
     }
     else {
-        print STDERR "error: out of rate\n";
+        print STDERR "error: out of range\n";
     }
 }
 
