@@ -10,9 +10,8 @@ WriteMakefile(
   VERSION_FROM => 'bin/gcap',
   PREREQ_PM    => {
                 'Getopt::ArgvFile' => 1.11,
-                'LWP::UserAgent'   => 5.835,
-                'XML::DOM'         => 1.44,
                 'HTML::Entities'   => 3.68,
+                'XML::DOM'         => 1.44,
                },
   BUILD_REQUIRES     => {'ExtUtils::MakeMaker' => 0,},
   CONFIGURE_REQUIRES => {'ExtUtils::MakeMaker' => 0,},
