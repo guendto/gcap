@@ -29,6 +29,7 @@ use version 0.77 (); our $VERSION = version->declare("0.1.0");
 
 use Getopt::ArgvFile(home => 1, startupFilename => [qw(.gcaprc)]);
 use Getopt::Long qw(:config bundling);
+use Carp qw(croak);
 
 exit main();
 
@@ -117,8 +118,7 @@ sub main
     }
     else
     {
-      say STDERR qq/error: "$url" looks nothing like a youtube page url/;
-      return 1;
+      croak qq/error: "$url" looks nothing like a youtube page url\n/;
     }
   }
   else
@@ -152,12 +152,13 @@ sub main
     push @captions, \%tmp;
     spew_qe((++$n % 5 == 0) ? " " : ".");
   }
+  $d->dispose;
 
   spew_qe "done.\n";
 
-  $d->dispose;
-
-  my $v = $1 if $url =~ /$q/ or die "error: $url: no match: video id";
+  my $v = $1
+    if $url =~ /$q/
+      or croak "error: $url: no match: video id\n";
 
   get_title($v, $a) if $config{title};
   prompt() if $config{interactive};
@@ -168,12 +169,7 @@ sub main
   {
     ++$t if $_->{selected};
   }
-
-  if ($t == 0)
-  {
-    say STDERR "error: no input: no captions found";
-    return 1;
-  }
+  croak "error: no input: no captions found\n" unless $t;
 
   require HTML::Entities;
 
@@ -303,11 +299,11 @@ sub get_title
 {
   my ($v, $a) = @_;
 
-  spew_qe ":: Getting video title ...";
-
   my $page_url = "http://youtube.com/watch?v=$v";
   my $url      = "http://www.youtube.com/get_video_info?&video_id=$v"
     . "&el=detailpage&ps=default&eurl=&gl=US&hl=en";
+
+  spew_qe ":: Getting video title ...";
 
   my $r = $a->get($url);
 
@@ -338,7 +334,6 @@ sub get_title
 
 sub apply_regexp
 {
-
   my ($re, $s) = @_;
   my ($pat, $flags);
 
@@ -349,16 +344,13 @@ sub apply_regexp
   }
   else
   {
-    say STDERR
-      qq{error: --regexp: "$re" looks nothing like `/pattern/flags`};
-    exit 1;
+    croak
+      qq{error: --regexp: "$re" looks nothing like `/pattern/flags`\n};
   }
-
   return unless $s;
 
   my $q = $flags =~ /i/ ? qr/$pat/i : qr/$pat/;
-
-  return join '', $flags =~ /g/ ? $s =~ /$q/g : $s =~ /$q/;
+  join '', $flags =~ /g/ ? $s =~ /$q/g : $s =~ /$q/;
 }
 
 sub help
