@@ -75,6 +75,16 @@ sub print_help
 
 my %config;
 
+sub check_umph_prompt
+{
+  if ($config{'interactive'} and not eval 'require Umph::Prompt')
+  {
+    say STDERR
+      qq/WARNING Umph::Prompt not found, ignoring --interactive option/;
+    $config{interactive} = 0;
+  }
+}
+
 sub init
 {
   treat_argv();
@@ -91,15 +101,17 @@ sub init
              'help'    => \&print_help,
             ) or exit 1;
 
-  print_help() unless scalar @ARGV;
+  print_help if scalar @ARGV == 0;
 
   $config{regexp} ||= "/(\\w|\\s)/g";
-  apply_regexp($config{regexp});    # Check syntax.
+
+  apply_regexp($config{regexp});    # Check regexp syntax
+  check_umph_prompt;
 }
 
 sub spew_qe {print STDERR @_ unless $config{quiet}}
 
-my @captions;
+my @items;
 my $title;
 
 sub main
@@ -148,9 +160,10 @@ sub main
        name => $e->getAttributeNode("name")->getValue || "",
        lang_code   => $e->getAttributeNode("lang_code")->getValue,
        lang_transl => $e->getAttributeNode("lang_translated")->getValue,
-       selected    => 1
+       selected    => 1,
     );
-    push @captions, \%tmp;
+    $tmp{title} = $tmp{lang_transl}; # So that Umph::Prompt works
+    push @items, \%tmp;
     spew_qe((++$n % 5 == 0) ? " " : ".");
   }
   $d->dispose;
@@ -162,11 +175,11 @@ sub main
       or croak "error: $url: no match: video id\n";
 
   get_title($v, $a) if $config{title};
-  prompt() if $config{interactive};
+  open_prompt() if $config{interactive};
 
   my $t = 0;
 
-  foreach (@captions)
+  foreach (@items)
   {
     ++$t if $_->{selected};
   }
@@ -176,7 +189,7 @@ sub main
 
   $n = 0;
 
-  foreach (@captions)
+  foreach (@items)
   {
     next unless $_->{selected};
 
@@ -255,47 +268,6 @@ sub main
   0;
 }
 
-my $done = 0;
-
-sub prompt
-{
-
-  return if scalar @captions == 0;
-
-  my %cmds = (
-              'h' => \&help,
-              'q' => \&quit,
-              'l' => \&list,
-              'a' => \&select_all,
-              'n' => \&select_none,
-              'i' => \&invert_selection,
-              'g' => \&get,
-             );
-
-  print STDERR "Enter prompt. "
-    . qq/Type "help" to get a list of commands.\n/;
-  list();
-
-  my $p = "(gcap) ";
-
-  while (!$done)
-  {
-    print STDERR $p;
-    my $ln = <STDIN>;
-    next unless $ln;
-    chomp $ln;
-    if ($ln =~ /(\d+)/)
-    {
-      toggle_caption($1);
-    }
-    else
-    {
-      next unless $ln =~ /(\w)/;
-      $cmds{$1}() if defined $cmds{$1};
-    }
-  }
-}
-
 sub get_title
 {
   my ($v, $a) = @_;
@@ -315,7 +287,6 @@ sub get_title
   }
 
   require CGI;
-
   my $q = CGI->new($r->content);
 
   if ($q->param('reason'))
@@ -354,77 +325,6 @@ sub apply_regexp
   join '', $flags =~ /g/ ? $s =~ /$q/g : $s =~ /$q/;
 }
 
-sub help
-{
-  print STDERR "Commands:
-  help      .. this
-  list      .. display found captions (> indicates selected for download)
-  all       .. select all
-  none      .. select none
-  invert    .. invert selection
-  (number)  .. toggle caption
-  get       .. download selected captions
-  quit      .. quit without downloading captions\n"
-    . qq/Command name abbreviations are allowed, e.g. "h" instead of "help"\n/;
-}
-
-sub get
-{
-  foreach (@captions)
-  {
-    if ($_->{selected})
-    {
-      $done = 1;
-      return;
-    }
-  }
-  print STDERR "error: you have not selected anything\n";
-}
-
-sub quit {exit 0;}
-
-sub list
-{
-  my $i = 0;
-  foreach (@captions)
-  {
-    printf STDERR "%2s%02d: $_->{lang_transl}\n",
-      $_->{selected} ? ">" : "", ++$i;
-  }
-}
-
-sub select_all
-{
-  $_->{selected} = 1 foreach @captions;
-  list();
-}
-
-sub select_none
-{
-  $_->{selected} = 0 foreach @captions;
-  list();
-}
-
-sub invert_selection
-{
-  $_->{selected} = !$_->{selected} foreach @captions;
-  list();
-}
-
-sub toggle_caption
-{
-  my $i = (shift) - 1;
-  if ($i >= 0 && exists $captions[$i])
-  {
-    $captions[$i]->{selected} = !$captions[$i]->{selected};
-    list();
-  }
-  else
-  {
-    print STDERR "error: out of range\n";
-  }
-}
-
 sub trim
 {
   my $s = shift;
@@ -432,6 +332,55 @@ sub trim
   $s =~ s{\s+$}//;
   $s =~ s{\s\s+}/ /g;
   $s;
+}
+
+sub open_prompt
+{
+  my $p = new Umph::Prompt(
+
+    # Commands.
+    commands => {
+      q => sub {
+        my ($p, $args) = @_;
+        $p->exit(\@items, $args);
+      },
+      d => sub {
+        my ($p, $args) = @_;
+        $p->display(\@items, $args);
+      },
+      m => sub {
+        my ($p, $args) = @_;
+        $p->max_shown_items(@{$args});
+      },
+      s => sub {
+        my ($p, $args) = @_;
+        $p->select(\@items, $args);
+      },
+      h => sub {
+        my ($p, $args) = @_;
+        $p->help;
+      },
+    },
+
+    # Callbacks. All of these are optional.
+    ontoggle => sub {
+      my ($p, $args) = @_;
+      $p->toggle(\@items, $args);
+    },
+    onitems  => sub {return \@items},
+    onloaded => sub {
+      my ($p, $args) = @_;
+      $p->display(\@items, $args);
+    },
+
+    # Other (required) settings
+    total_items     => scalar @items,
+    prompt_msg      => 'umph',
+    max_shown_items => 20
+  );
+
+  say STDERR qq/Enter prompt. Type "help" to get a list of commands./;
+  $p->exec;
 }
 
 __END__
@@ -447,7 +396,7 @@ gcap [-i] [-t] [-r E<lt>regexpE<gt>] [--proxy E<lt>addrE<gt> | --no-proxy]
      --version                    Print version and exit
  -q, --quiet                      Be quiet
  -i, --interactive                Run in interactive mode
- -t, --title                      Parse video title and use it in filename
+ -t, --title                      Use video title in filename
  -r, --regexp arg (="/(\w|\s)/g") Cleanup title with regexp
      --proxy arg (=http_proxy)    Use proxy for http connections
      --no-proxy                   Disable use of HTTP proxy
