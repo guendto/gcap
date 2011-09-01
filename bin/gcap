@@ -30,9 +30,9 @@ use version 0.77 (); our $VERSION = version->declare("0.1.0");
 use Getopt::ArgvFile(home => 1, startupFilename => [qw(.gcaprc)]);
 use Getopt::Long qw(:config bundling);
 
-my %config;
-
 exit main();
+
+my %config;
 
 sub init
 {
@@ -49,6 +49,8 @@ sub init
              'version' => \&print_version,
              'help'    => \&print_help,
             ) or exit 1;
+
+  print_help() unless scalar @ARGV;
 
   $config{regexp} ||= "/(\\w|\\s)/g";
   apply_regexp($config{regexp});    # Check syntax.
@@ -93,15 +95,14 @@ sub print_help
   Pod::Usage::pod2usage(-exitstatus => 0, -verbose => 1);
 }
 
+sub spew_qe {print STDERR @_ unless $config{quiet}}
+
 my @captions;
 my $title;
 
 sub main
 {
-
-  init();
-
-  print_help() unless scalar @ARGV;
+  init;
 
   my $req_body = "http://video.google.com/timedtext?hl=en&type=list&v=";
   my $url      = $ARGV[0];
@@ -116,8 +117,7 @@ sub main
     }
     else
     {
-      print STDERR
-        "error: '$url' does not look like a youtube video page url\n";
+      say STDERR qq/error: "$url" looks nothing like a youtube page url/;
       return 1;
     }
   }
@@ -126,14 +126,11 @@ sub main
     $url = "$req_body$url";
   }
 
-  print STDERR "Checking ..." unless $config{quiet};
+  spew_qe "Checking ...";
 
   require LWP;
-
   my $a = new LWP::UserAgent;
-
   $a->env_proxy;    # http://search.cpan.org/perldoc?LWP::UserAgent
-
   $a->proxy('http', $config{proxy}) if $config{proxy};
   $a->no_proxy('') if $config{no_proxy};
 
@@ -142,6 +139,7 @@ sub main
   my $p = new XML::DOM::Parser(LWP_UserAgent => $a);
   my $d = $p->parsefile($url);
   my $r = $d->getDocumentElement;
+  my $n = 0;
 
   for my $e ($r->getElementsByTagName("track"))
   {
@@ -152,10 +150,10 @@ sub main
        selected    => 1
     );
     push @captions, \%tmp;
-    print STDERR "." unless $config{quiet};
+    spew_qe((++$n % 5 == 0) ? " " : ".");
   }
 
-  print STDERR "done.\n" unless $config{quiet};
+  spew_qe "done.\n";
 
   $d->dispose;
 
@@ -173,17 +171,16 @@ sub main
 
   if ($t == 0)
   {
-    print STDERR "error: no input: no captions found\n";
+    say STDERR "error: no input: no captions found";
     return 1;
   }
 
   require HTML::Entities;
 
-  my $n = 0;
+  $n = 0;
 
   foreach (@captions)
   {
-
     next unless $_->{selected};
 
     $url =
@@ -203,11 +200,8 @@ sub main
     open my $fh, ">", $fname or die "$fname: $!\n";
     binmode $fh, ":utf8";
 
-    unless ($config{quiet})
-    {
-      printf STDERR "(%02d of %02d) ", ++$n, $t if $t > 0;
-      print STDERR "Saving $fname ...";
-    }
+    spew_qe sprintf "(%02d of %02d) ", ++$n, $t if $t > 0;
+    spew_qe "Saving $fname ...";
 
     $d = $p->parsefile($url);
     $r = $d->getDocumentElement;
@@ -257,15 +251,11 @@ sub main
 
       $last_start = $start;
     }
-
     $d->dispose;
-
     close $fh;
-
-    print STDERR "done.\n" unless $config{quiet};
+    spew_qe "done.\n";
   }
-
-  return 0;
+  0;
 }
 
 my $done = 0;
@@ -313,7 +303,7 @@ sub get_title
 {
   my ($v, $a) = @_;
 
-  print STDERR ":: Getting video title ..." unless $config{quiet};
+  spew_qe ":: Getting video title ...";
 
   my $page_url = "http://youtube.com/watch?v=$v";
   my $url      = "http://www.youtube.com/get_video_info?&video_id=$v"
@@ -339,9 +329,9 @@ sub get_title
   }
   else
   {
-    print STDERR "done.\n" unless $config{quiet};
     require Encode;
     $title = trim(Encode::decode_utf8($q->param('title')));
+    spew_qe "done.\n";
   }
   $title;
 }
@@ -359,8 +349,8 @@ sub apply_regexp
   }
   else
   {
-    print STDERR
-      "error: --regexp: '$re' does not look like `/pattern/flags'\n";
+    say STDERR
+      qq{error: --regexp: "$re" looks nothing like `/pattern/flags`};
     exit 1;
   }
 
@@ -471,4 +461,4 @@ gcap [-i] [-t] [-r E<lt>regexpE<gt>] [--proxy E<lt>addrE<gt> | --no-proxy]
 
 =cut
 
-# vim: set ts=4 sw=4 tw=72 expandtab:
+# vim: set ts=2 sw=2 tw=72 expandtab:
