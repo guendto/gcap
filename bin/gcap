@@ -374,7 +374,7 @@ sub open_prompt
 
     # Other (required) settings
     total_items     => scalar @items,
-    prompt_msg      => 'umph',
+    prompt_msg      => 'gcap',
     max_shown_items => 20
   );
 
