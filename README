@@ -1,40 +1,19 @@
 
-
-    In brief
+GENERAL
+=======
 
 gcap is a command line tool for retrieving Youtube closed captions.
 The retrieved closed captions are saved in SubRip (srt) file format.
 The srt files are saved as "$videoid_$langid.srt".
 
-WWW: <http://gcap.googlecode.com/>
-GIT: <git://repo.or.cz/gcap.git>
+Home  : <http://gcap.googlecode.com/>
+gitweb: <http://repo.or.cz/w/gcap.git>
 
 
-PREREQUISITES
+LICENSE
+=======
 
-See the Makefile.PL file.
-
-
-INSTALLATION
-
-You can skip this step, if you like, and instead just run "bin/gcap".
-This should work as long as the prerequisites are found.
-
-If you choose to install:
-
-    * Highly recommended
-        - Remove / uninstall any earlier version you have installed
-
-    * You can specify install prefix with INSTALL_BASE
-        e.g. perl Makefile.PL INSTALL_BASE=/usr/local
-
-To install:
-
-    perl Makefile.PL
-    make
-    make install
-
-  More: <http://search.cpan.org/perldoc?ExtUtils::MakeMaker>
-   FAQ: <http://perldoc.perl.org/ExtUtils/MakeMaker/FAQ.html>
+gcap is free software, licensed under the GPLv3+.
 
 
+vim: set ts=2 sw=2 tw=72 expandtab:
