@@ -31,9 +31,8 @@ Be quiet.
 
 =item B<-i, --interactive>
 
-Enable interactive prompt which can be used to select the downloaded
-closed captions. By default gcap downloads all available captions
-without prompting.
+Open the interactive prompt which can be used to select the items.
+gcap selects I<all> items by default. See also L</INTERACTIVE PROMPT>.
 
 =item B<-t, --title>
 
@@ -57,6 +56,12 @@ settings.
 
 =back
 
+=head1 INTERACTIVE PROMPT
+
+Use the C<--interactive> switch to open the prompt. Note that gcap
+uses (as of 0.1.0) the Umph::Prompt module for this. Once the prompt
+opens, type "help" to get a list of commands available to the prompt.
+
 =head1 EXAMPLES
 
 =over 4
@@ -66,6 +71,11 @@ settings.
 =item B<gcap "http://www.youtube.com/watch?v=0QRO3gKj3qw">
 
 Both yield the same results.
+
+=item B<gcap -ti 0QRO3gKj3qw>
+
+Same as above two but use video title in the filename and choose which
+of the closed captions should be downloaded.
 
 =back
 
@@ -114,4 +124,4 @@ E<lt>http://repo.or.cz/w/gcap.gitE<gt>
 
 =head1 AUTHOR
 
-Toni Gundogdu E<lt>legatvs gmail comE<gt>
+Toni Gundogdu E<lt>legatvs at sign cpan orgE<gt>
