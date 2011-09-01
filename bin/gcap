@@ -31,7 +31,6 @@ use Getopt::ArgvFile(home => 1, startupFilename => [qw(.gcaprc)]);
 use Getopt::Long qw(:config bundling);
 
 my %config;
-my $video_title;
 
 exit main();
 
@@ -111,6 +110,7 @@ sub print_help
 }
 
 my @captions;
+my $title;
 
 sub main
 {
@@ -210,10 +210,10 @@ sub main
 
     my $fname = sprintf "%s_%s.srt", $v, $_->{lang_code};
 
-    if ($video_title)
+    if ($title)
     {
-      $video_title = apply_regexp($config{regexp}, $video_title);
-      $fname = sprintf "%s_%s.srt", $video_title, $_->{lang_code};
+      $title = apply_regexp($config{regexp}, $title);
+      $fname = sprintf "%s_%s.srt", $title, $_->{lang_code};
     }
 
     open my $fh, ">", $fname or die "$fname: $!\n";
@@ -357,10 +357,9 @@ sub get_title
   {
     print STDERR "done.\n" unless $config{quiet};
     require Encode;
-    $video_title = trim(Encode::decode_utf8($q->param('title')));
+    $title = trim(Encode::decode_utf8($q->param('title')));
   }
-
-  $video_title;
+  $title;
 }
 
 sub apply_regexp
