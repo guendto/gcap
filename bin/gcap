@@ -148,7 +148,6 @@ sub main
   $a->no_proxy('') if $config{no_proxy};
 
   require XML::DOM;
-
   my $p = new XML::DOM::Parser(LWP_UserAgent => $a);
   my $d = $p->parsefile($url);
   my $r = $d->getDocumentElement;
