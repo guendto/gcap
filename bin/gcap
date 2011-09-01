@@ -32,30 +32,6 @@ use Getopt::Long qw(:config bundling);
 
 exit main();
 
-my %config;
-
-sub init
-{
-  treat_argv();
-
-  GetOptions(
-             \%config,
-             'interactive|i',
-             'title|t',
-             'regexp|r=s',
-             'proxy=s',
-             'no_proxy|no-proxy',
-             'quiet|q',
-             'version' => \&print_version,
-             'help'    => \&print_help,
-            ) or exit 1;
-
-  print_help() unless scalar @ARGV;
-
-  $config{regexp} ||= "/(\\w|\\s)/g";
-  apply_regexp($config{regexp});    # Check syntax.
-}
-
 sub treat_argv
 {
 
@@ -93,6 +69,30 @@ sub print_help
 {
   require Pod::Usage;
   Pod::Usage::pod2usage(-exitstatus => 0, -verbose => 1);
+}
+
+my %config;
+
+sub init
+{
+  treat_argv();
+
+  GetOptions(
+             \%config,
+             'interactive|i',
+             'title|t',
+             'regexp|r=s',
+             'proxy=s',
+             'no_proxy|no-proxy',
+             'quiet|q',
+             'version' => \&print_version,
+             'help'    => \&print_help,
+            ) or exit 1;
+
+  print_help() unless scalar @ARGV;
+
+  $config{regexp} ||= "/(\\w|\\s)/g";
+  apply_regexp($config{regexp});    # Check syntax.
 }
 
 sub spew_qe {print STDERR @_ unless $config{quiet}}
