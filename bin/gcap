@@ -386,8 +386,8 @@ __END__
 
 =head1 SYNOPSIS
 
-gcap [-i] [-t] [-r E<lt>regexpE<gt>] [--proxy E<lt>addrE<gt> | --no-proxy]
-     [E<lt>urlE<gt> | E<lt>video_idE<gt>]
+gcap [-i] [-t] [-r E<lt>regexpE<gt>] [--proxy=E<lt>addrE<gt> | --no-proxy]
+     [--help] E<lt>urlE<gt> | E<lt>video_idE<gt>
 
 =head2 OPTIONS
 
