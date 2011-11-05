@@ -1,4 +1,10 @@
 
+0.1.1  Sat Nov 05 2011  Toni Gundogdu
+
+Bugfixes:
+    - Handle HTTPS (#4)
+
+
 0.1.0  Thu Sep 01 2011  Toni Gundogdu
 Changes:
     - use Perl 5.10.1+
